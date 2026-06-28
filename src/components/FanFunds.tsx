@@ -87,7 +87,7 @@ function CardFront({ record }: { record: AthleteRecord }) {
         {/* header band */}
         <div className="bg-[#3a2e1e] px-2 py-1.5 flex items-center justify-between">
           {isClaimed(record) ? (
-            <CheckCircle2 className="w-3.5 h-3.5 fill-[#c9b98a] text-[#3a2e1e] flex-shrink-0" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" style={{ fill: "#2e7d32" }} />
           ) : (
             <span className="w-3.5 h-3.5 flex-shrink-0" />
           )}
@@ -97,22 +97,21 @@ function CardFront({ record }: { record: AthleteRecord }) {
           <span className="w-3.5 h-3.5 flex-shrink-0" />
         </div>
 
-        {/* athlete name — always vertically centered, same space every card */}
-        <div className="flex-1 flex items-center justify-center text-center px-3">
+        {/* name + philanthropy centered in card body */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-3 gap-1.5">
           <h3
             className="text-xl font-bold text-[#2c2c2c] leading-tight"
             style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
           >
             {record.icon_name}
           </h3>
-        </div>
-
-        {/* footer band */}
-        <div className="bg-[#3a2e1e] px-2 py-1.5">
-          <p className="text-center text-[9px] tracking-wide uppercase text-[#c9b98a] font-sans leading-tight line-clamp-2">
+          <p className="text-[10px] text-[#7a7060] font-sans tracking-wide leading-tight line-clamp-2">
             {record.philanthropy_name}
           </p>
         </div>
+
+        {/* footer band — pure styling */}
+        <div className="bg-[#3a2e1e] px-2 py-1.5" />
       </div>
     </div>
   );
