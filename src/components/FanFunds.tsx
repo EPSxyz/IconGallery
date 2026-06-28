@@ -81,40 +81,35 @@ function ClaimedBadge() {
 // Card Front
 function CardFront({ record }: { record: AthleteRecord }) {
   return (
-    <div className="card-face bg-[#fdfbf7] rounded-sm h-full flex flex-col">
-      {/* outer double border */}
-      <div className="m-2 border border-[#d4c9b0] rounded-sm h-full flex flex-col">
-        <div className="m-[3px] border border-[#d4c9b0] rounded-sm h-full flex flex-col p-3">
-          {/* subcategory label */}
-          <div className="flex justify-center mb-3">
-            <span className="text-[10px] tracking-widest uppercase text-[#7a7060] border border-[#d4c9b0] px-2 py-0.5 rounded-sm font-sans">
-              {record.icon_subcategory || "Icon"}
-            </span>
-          </div>
+    <div className="card-face rounded-sm h-full flex flex-col bg-[#e8dfc8] border-2 border-[#3a2e1e]">
+      {/* inner border inset */}
+      <div className="m-[5px] border border-[#3a2e1e] h-full flex flex-col">
+        {/* header band */}
+        <div className="bg-[#3a2e1e] px-2 py-1.5 flex items-center justify-between">
+          {isClaimed(record) ? (
+            <CheckCircle2 className="w-3.5 h-3.5 fill-[#c9b98a] text-[#3a2e1e] flex-shrink-0" />
+          ) : (
+            <span className="w-3.5 h-3.5 flex-shrink-0" />
+          )}
+          <span className="text-[9px] tracking-widest uppercase text-[#c9b98a] font-sans flex-1 text-center mx-1">
+            {record.icon_subcategory || "Athlete"}
+          </span>
+          <span className="w-3.5 h-3.5 flex-shrink-0" />
+        </div>
 
-          {/* decorative rule */}
-          <div className="border-t border-[#d4c9b0] mx-2 mb-3" />
+        {/* athlete name — always vertically centered, same space every card */}
+        <div className="flex-1 flex items-center justify-center text-center px-3">
+          <h3
+            className="text-xl font-bold text-[#2c2c2c] leading-tight"
+            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+          >
+            {record.icon_name}
+          </h3>
+        </div>
 
-          {/* athlete name */}
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
-            <h3
-              className="font-[family-name:var(--font-playfair)] text-xl font-bold text-[#2c2c2c] leading-tight"
-              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-            >
-              {record.icon_name}
-            </h3>
-            {isClaimed(record) && (
-              <div className="mt-1">
-                <ClaimedBadge />
-              </div>
-            )}
-          </div>
-
-          {/* decorative rule */}
-          <div className="border-t border-[#d4c9b0] mx-2 mt-3 mb-2" />
-
-          {/* philanthropy name */}
-          <p className="text-center text-[11px] text-[#7a7060] font-sans tracking-wide px-2 pb-1 leading-tight">
+        {/* footer band */}
+        <div className="bg-[#3a2e1e] px-2 py-1.5">
+          <p className="text-center text-[9px] tracking-wide uppercase text-[#c9b98a] font-sans leading-tight line-clamp-2">
             {record.philanthropy_name}
           </p>
         </div>
@@ -126,45 +121,42 @@ function CardFront({ record }: { record: AthleteRecord }) {
 // Card Back
 function CardBack({ record, onDonate }: { record: AthleteRecord; onDonate: (e: React.MouseEvent) => void }) {
   return (
-    <div className="card-face card-back bg-[#f5f0e8] rounded-sm h-full flex flex-col">
-      <div className="m-2 border border-[#d4c9b0] rounded-sm h-full flex flex-col">
-        <div className="m-[3px] border border-[#d4c9b0] rounded-sm h-full flex flex-col">
-          {/* banner header */}
-          <div className="bg-[#2c2c2c] text-[#fdfbf7] text-center py-2 px-3">
-            <p
-              className="text-[11px] font-bold tracking-widest uppercase"
-              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-            >
-              {record.philanthropy_name}
+    <div className="card-face card-back rounded-sm h-full flex flex-col bg-[#e8dfc8] border-2 border-[#3a2e1e]">
+      <div className="m-[5px] border border-[#3a2e1e] h-full flex flex-col">
+        {/* header band */}
+        <div className="bg-[#3a2e1e] px-2 py-1.5">
+          <p
+            className="text-center text-[9px] font-bold tracking-widest uppercase text-[#c9b98a] font-sans line-clamp-2 leading-tight"
+          >
+            {record.philanthropy_name}
+          </p>
+        </div>
+
+        <div className="flex-1 flex flex-col p-3 gap-2">
+          {/* stats box */}
+          <div className="border border-[#3a2e1e] p-2 bg-[#d6c9a8]">
+            <div className="flex items-baseline justify-between mb-1">
+              <span className="text-[9px] uppercase tracking-widest text-[#7a7060] font-sans">Revenue</span>
+              <span className="font-mono text-sm font-bold text-[#2c2c2c]">
+                {formatRevenue(record.annual_revenue)}
+              </span>
+            </div>
+            <div className="border-t border-[#b8a888] my-1.5" />
+            <p className="text-[10px] text-[#4a3e2e] font-sans leading-relaxed line-clamp-4">
+              {record.mission_statement}
             </p>
           </div>
 
-          <div className="flex-1 flex flex-col p-3 gap-3">
-            {/* stats */}
-            <div className="border border-[#d4c9b0] rounded-sm p-2 bg-[#fdfbf7]">
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="text-[9px] uppercase tracking-widest text-[#7a7060] font-sans">Annual Revenue</span>
-                <span className="font-mono text-sm font-bold text-[#2c2c2c]">
-                  {formatRevenue(record.annual_revenue)}
-                </span>
-              </div>
-              <div className="border-t border-[#e8e0d0] my-1.5" />
-              <p className="text-[10px] text-[#7a7060] font-sans leading-relaxed line-clamp-4">
-                {record.mission_statement}
-              </p>
-            </div>
+          <div className="flex-1" />
 
-            <div className="flex-1" />
-
-            {/* donate button */}
-            <button
-              onClick={onDonate}
-              className="w-full flex items-center justify-center gap-1.5 bg-[#2c2c2c] hover:bg-[#4a7c59] text-[#fdfbf7] text-[11px] tracking-widest uppercase font-sans py-2 rounded-sm transition-colors duration-300"
-            >
-              <Heart className="w-3 h-3" />
-              Donate
-            </button>
-          </div>
+          {/* donate button */}
+          <button
+            onClick={onDonate}
+            className="w-full flex items-center justify-center gap-1.5 bg-[#3a2e1e] hover:bg-[#4a7c59] text-[#c9b98a] text-[11px] tracking-widest uppercase font-sans py-2 transition-colors duration-300"
+          >
+            <Heart className="w-3 h-3" />
+            Donate
+          </button>
         </div>
       </div>
     </div>
