@@ -28,6 +28,13 @@ type AthleteRecord = {
 
 type Page = "directory" | "about" | "claim";
 
+type AthleteGroup = {
+  icon_name: string;
+  icon_subcategory: string;
+  claimed: boolean;
+  records: AthleteRecord[];
+};
+
 const DATA_URL = "/api/athletes";
 
 const STATIC_RECORDS: AthleteRecord[] = [
@@ -59,6 +66,19 @@ function isClaimed(record: AthleteRecord) {
   return record.claimed?.toLowerCase() === "yes";
 }
 
+function groupRecords(records: AthleteRecord[]): AthleteGroup[] {
+  const map = new Map<string, AthleteGroup>();
+  for (const r of records) {
+    if (!map.has(r.icon_name)) {
+      map.set(r.icon_name, { icon_name: r.icon_name, icon_subcategory: r.icon_subcategory, claimed: false, records: [] });
+    }
+    const g = map.get(r.icon_name)!;
+    if (g.records.length < 3) g.records.push(r);
+    if (isClaimed(r)) g.claimed = true;
+  }
+  return Array.from(map.values());
+}
+
 function formatRevenue(raw: string) {
   if (!raw || raw.trim() === "") return "—";
   const n = parseFloat(raw.replace(/[^0-9.]/g, ""));
@@ -79,38 +99,50 @@ function ClaimedBadge() {
 }
 
 // Card Front
-function CardFront({ record }: { record: AthleteRecord }) {
+function CardFront({ group }: { group: AthleteGroup }) {
   return (
     <div className="card-face rounded-sm h-full flex flex-col bg-[#e8dfc8] border-2 border-[#3a2e1e]">
-      {/* inner border inset */}
       <div className="m-[5px] border border-[#3a2e1e] h-full flex flex-col">
         {/* header band */}
         <div className="bg-[#3a2e1e] px-2 py-1.5 flex items-center justify-between">
-          {isClaimed(record) ? (
+          {group.claimed ? (
             <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" style={{ fill: "#2e7d32" }} />
           ) : (
             <span className="w-3.5 h-3.5 flex-shrink-0" />
           )}
           <span className="text-[9px] tracking-widest uppercase text-[#c9b98a] font-sans flex-1 text-center mx-1">
-            {record.icon_subcategory || "Athlete"}
+            {group.icon_subcategory || "Athlete"}
           </span>
           <span className="w-3.5 h-3.5 flex-shrink-0" />
         </div>
 
-        {/* name + philanthropy centered in card body */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-3 gap-1.5">
+        {/* card body — athlete name always centered, charities listed below */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-3 py-3 gap-0">
           <h3
             className="text-xl font-bold text-[#2c2c2c] leading-tight"
             style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
           >
-            {record.icon_name}
+            {group.icon_name}
           </h3>
-          <p className="text-[10px] text-[#7a7060] font-sans tracking-wide leading-tight line-clamp-2">
-            {record.philanthropy_name}
-          </p>
+
+          {/* divider */}
+          <div className="w-8 border-t border-[#b8a888] my-2.5" />
+
+          {/* philanthropy names — the point of the whole card */}
+          <div className="flex flex-col items-center gap-1.5">
+            {group.records.map((r) => (
+              <p
+                key={r.id}
+                className="text-[12px] font-semibold text-[#4a3e2e] leading-tight"
+                style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}
+              >
+                {r.philanthropy_name}
+              </p>
+            ))}
+          </div>
         </div>
 
-        {/* footer band — pure styling */}
+        {/* footer band — decorative */}
         <div className="bg-[#3a2e1e] px-2 py-1.5" />
       </div>
     </div>
@@ -118,43 +150,50 @@ function CardFront({ record }: { record: AthleteRecord }) {
 }
 
 // Card Back
-function CardBack({ record, onDonate }: { record: AthleteRecord; onDonate: (e: React.MouseEvent) => void }) {
+function CardBack({ group, onDonate }: { group: AthleteGroup; onDonate: (e: React.MouseEvent) => void }) {
   return (
     <div className="card-face card-back rounded-sm h-full flex flex-col bg-[#e8dfc8] border-2 border-[#3a2e1e]">
       <div className="m-[5px] border border-[#3a2e1e] h-full flex flex-col">
         {/* header band */}
         <div className="bg-[#3a2e1e] px-2 py-1.5">
-          <p
-            className="text-center text-[9px] font-bold tracking-widest uppercase text-[#c9b98a] font-sans line-clamp-2 leading-tight"
-          >
-            {record.philanthropy_name}
+          <p className="text-center text-[9px] font-bold tracking-widest uppercase text-[#c9b98a] font-sans leading-tight">
+            {group.icon_name}
           </p>
         </div>
 
-        <div className="flex-1 flex flex-col p-3 gap-2">
-          {/* stats box */}
-          <div className="border border-[#3a2e1e] p-2 bg-[#d6c9a8]">
-            <div className="flex items-baseline justify-between mb-1">
-              <span className="text-[9px] uppercase tracking-widest text-[#7a7060] font-sans">Revenue</span>
-              <span className="font-mono text-sm font-bold text-[#2c2c2c]">
-                {formatRevenue(record.annual_revenue)}
-              </span>
+        <div className="flex-1 flex flex-col p-3 gap-2 overflow-hidden">
+          {/* one stat box per charity */}
+          {group.records.map((r) => (
+            <div key={r.id} className="border border-[#3a2e1e] p-2 bg-[#d6c9a8]">
+              <div className="flex items-baseline justify-between mb-1">
+                <p className="text-[9px] font-semibold text-[#3a2e1e] font-sans leading-tight line-clamp-1 flex-1 mr-2"
+                  style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}>
+                  {r.philanthropy_name}
+                </p>
+                <span className="font-mono text-[10px] font-bold text-[#2c2c2c] flex-shrink-0">
+                  {formatRevenue(r.annual_revenue)}
+                </span>
+              </div>
+              {group.records.length === 1 && (
+                <>
+                  <div className="border-t border-[#b8a888] my-1.5" />
+                  <p className="text-[10px] text-[#4a3e2e] font-sans leading-relaxed line-clamp-3">
+                    {r.mission_statement}
+                  </p>
+                </>
+              )}
             </div>
-            <div className="border-t border-[#b8a888] my-1.5" />
-            <p className="text-[10px] text-[#4a3e2e] font-sans leading-relaxed line-clamp-4">
-              {record.mission_statement}
-            </p>
-          </div>
+          ))}
 
           <div className="flex-1" />
 
-          {/* donate button */}
+          {/* donate button — links to primary charity */}
           <button
             onClick={onDonate}
             className="w-full flex items-center justify-center gap-1.5 bg-[#3a2e1e] hover:bg-[#4a7c59] text-[#c9b98a] text-[11px] tracking-widest uppercase font-sans py-2 transition-colors duration-300"
           >
             <Heart className="w-3 h-3" />
-            Donate
+            {group.records.length > 1 ? "See All" : "Donate"}
           </button>
         </div>
       </div>
@@ -162,19 +201,16 @@ function CardBack({ record, onDonate }: { record: AthleteRecord; onDonate: (e: R
   );
 }
 
+
 // Athlete Card (flip wrapper)
-function AthleteCard({
-  record,
-  onClick,
-}: {
-  record: AthleteRecord;
-  onClick: () => void;
-}) {
+function AthleteCard({ group, onClick }: { group: AthleteGroup; onClick: () => void }) {
   const [flipped, setFlipped] = useState(false);
 
   function handleDonate(e: React.MouseEvent) {
     e.stopPropagation();
-    if (record.donation_url) window.open(record.donation_url, "_blank", "noopener");
+    const url = group.records[0]?.donation_url;
+    if (url) window.open(url, "_blank", "noopener");
+    else onClick();
   }
 
   return (
@@ -190,8 +226,8 @@ function AthleteCard({
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.55, ease: PAGE_EASE }}
       >
-        <CardFront record={record} />
-        <CardBack record={record} onDonate={handleDonate} />
+        <CardFront group={group} />
+        <CardBack group={group} onDonate={handleDonate} />
       </motion.div>
     </div>
   );
@@ -200,16 +236,14 @@ function AthleteCard({
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
 function Modal({
-  record,
+  group,
   onClose,
   onClaim,
 }: {
-  record: AthleteRecord;
+  group: AthleteGroup;
   onClose: () => void;
   onClaim: (name: string) => void;
 }) {
-  const claimed = isClaimed(record);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -224,13 +258,8 @@ function Modal({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
     >
-      {/* backdrop */}
-      <motion.div
-        className="absolute inset-0 bg-[#2c2c2c]/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <motion.div className="absolute inset-0 bg-[#2c2c2c]/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/* card */}
       <motion.div
         className="relative z-10 bg-[#fdfbf7] w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm shadow-2xl"
         initial={{ scale: 0.95, opacity: 0, y: 12 }}
@@ -238,10 +267,8 @@ function Modal({
         exit={{ scale: 0.95, opacity: 0, y: 12 }}
         transition={{ duration: 0.3, ease: PAGE_EASE }}
       >
-        {/* double border frame */}
         <div className="m-4 border border-[#d4c9b0]">
           <div className="m-[3px] border border-[#d4c9b0]">
-            {/* close button */}
             <button
               onClick={onClose}
               className="absolute top-7 right-7 text-[#7a7060] hover:text-[#2c2c2c] transition-colors z-10"
@@ -252,81 +279,86 @@ function Modal({
             {/* header */}
             <div className="border-b border-[#d4c9b0] p-6 text-center">
               <span className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans border border-[#d4c9b0] px-2 py-0.5 rounded-sm">
-                {record.icon_subcategory}
+                {group.icon_subcategory}
               </span>
               <div className="mt-3 flex items-center justify-center gap-2">
                 <h2
                   className="text-3xl font-bold text-[#2c2c2c]"
                   style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
                 >
-                  {record.icon_name}
+                  {group.icon_name}
                 </h2>
-                {claimed && <ClaimedBadge />}
+                {group.claimed && <ClaimedBadge />}
               </div>
-              <p className="mt-1 text-sm text-[#7a7060] font-sans">{record.philanthropy_name}</p>
             </div>
 
-            {/* body */}
-            <div className="p-6 space-y-6">
-              {/* description */}
-              {record.philanthropy_description && (
-                <p className="text-[#2c2c2c] font-sans text-sm leading-relaxed">
-                  {record.philanthropy_description}
-                </p>
-              )}
-
-              {/* stats */}
-              <div className="border border-[#d4c9b0] rounded-sm">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#d4c9b0]">
-                  <span className="text-[10px] uppercase tracking-widest text-[#7a7060] font-sans">Annual Revenue</span>
-                  <span className="font-mono text-base font-bold text-[#2c2c2c]">
-                    {formatRevenue(record.annual_revenue)}
-                  </span>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-widest text-[#7a7060] font-sans mb-1">Mission</p>
-                  <p className="text-sm text-[#2c2c2c] font-sans leading-relaxed">{record.mission_statement}</p>
-                </div>
-              </div>
-
-              {/* action buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {record.propublica_url && (
-                  <a
-                    href={record.propublica_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 border border-[#d4c9b0] text-[#7a7060] hover:text-[#2c2c2c] hover:border-[#2c2c2c] text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200"
+            {/* one section per charity */}
+            <div className="divide-y divide-[#d4c9b0]">
+              {group.records.map((record, i) => (
+                <div key={record.id} className="p-6 space-y-4">
+                  {/* charity name */}
+                  <h3
+                    className="text-xl font-semibold text-[#3a2e1e]"
+                    style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    View 990 Filing
-                  </a>
-                )}
-                {record.donation_url && (
-                  <a
-                    href={record.donation_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#4a7c59] hover:bg-[#3a6147] text-white text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200"
-                  >
-                    <Heart className="w-3.5 h-3.5" />
-                    Donate Now
-                  </a>
-                )}
-              </div>
+                    {record.philanthropy_name}
+                    {group.records.length > 1 && (
+                      <span className="ml-2 text-[10px] not-italic tracking-widest uppercase text-[#7a7060] font-sans align-middle">
+                        #{i + 1}
+                      </span>
+                    )}
+                  </h3>
 
-              {!claimed && (
-                <div className="border-t border-[#d4c9b0] pt-4">
-                  <button
-                    onClick={() => onClaim(record.icon_name)}
-                    className="w-full flex items-center justify-center gap-2 border border-[#d4c9b0] hover:border-[#2c2c2c] text-[#7a7060] hover:text-[#2c2c2c] text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    Claim This Profile
-                  </button>
+                  {record.philanthropy_description && (
+                    <p className="text-[#2c2c2c] font-sans text-sm leading-relaxed">
+                      {record.philanthropy_description}
+                    </p>
+                  )}
+
+                  <div className="border border-[#d4c9b0] rounded-sm">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#d4c9b0]">
+                      <span className="text-[10px] uppercase tracking-widest text-[#7a7060] font-sans">Annual Revenue</span>
+                      <span className="font-mono text-base font-bold text-[#2c2c2c]">
+                        {formatRevenue(record.annual_revenue)}
+                      </span>
+                    </div>
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] uppercase tracking-widest text-[#7a7060] font-sans mb-1">Mission</p>
+                      <p className="text-sm text-[#2c2c2c] font-sans leading-relaxed">{record.mission_statement}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {record.propublica_url && (
+                      <a href={record.propublica_url} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 border border-[#d4c9b0] text-[#7a7060] hover:text-[#2c2c2c] hover:border-[#2c2c2c] text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200">
+                        <FileText className="w-3.5 h-3.5" />
+                        View 990 Filing
+                      </a>
+                    )}
+                    {record.donation_url && (
+                      <a href={record.donation_url} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 bg-[#4a7c59] hover:bg-[#3a6147] text-white text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200">
+                        <Heart className="w-3.5 h-3.5" />
+                        Donate Now
+                      </a>
+                    )}
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
+
+            {!group.claimed && (
+              <div className="px-6 pb-6">
+                <button
+                  onClick={() => onClaim(group.icon_name)}
+                  className="w-full flex items-center justify-center gap-2 border border-[#d4c9b0] hover:border-[#2c2c2c] text-[#7a7060] hover:text-[#2c2c2c] text-[11px] tracking-widest uppercase font-sans py-3 rounded-sm transition-colors duration-200"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  Claim This Profile
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -347,28 +379,28 @@ const cardVariants = {
 };
 
 function DirectoryPage({
-  records,
+  groups,
   loading,
   onCardClick,
   onNavigateClaim,
 }: {
-  records: AthleteRecord[];
+  groups: AthleteGroup[];
   loading: boolean;
-  onCardClick: (r: AthleteRecord) => void;
+  onCardClick: (g: AthleteGroup) => void;
   onNavigateClaim: (name: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  const subcategories = Array.from(new Set(records.map((r) => r.icon_subcategory).filter(Boolean))).sort();
+  const subcategories = Array.from(new Set(groups.map((g) => g.icon_subcategory).filter(Boolean))).sort();
 
-  const filtered = records.filter((r) => {
+  const filtered = groups.filter((g) => {
+    const q = search.toLowerCase();
     const matchSearch =
       !search ||
-      r.icon_name.toLowerCase().includes(search.toLowerCase()) ||
-      r.philanthropy_name.toLowerCase().includes(search.toLowerCase()) ||
-      r.mission_statement.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = !activeFilter || r.icon_subcategory === activeFilter;
+      g.icon_name.toLowerCase().includes(q) ||
+      g.records.some((r) => r.philanthropy_name.toLowerCase().includes(q) || r.mission_statement.toLowerCase().includes(q));
+    const matchFilter = !activeFilter || g.icon_subcategory === activeFilter;
     return matchSearch && matchFilter;
   });
 
@@ -433,9 +465,9 @@ function DirectoryPage({
           initial="hidden"
           animate="visible"
         >
-          {filtered.map((record) => (
-            <motion.div key={record.id || record.icon_name} variants={cardVariants}>
-              <AthleteCard record={record} onClick={() => onCardClick(record)} />
+          {filtered.map((group) => (
+            <motion.div key={group.icon_name} variants={cardVariants}>
+              <AthleteCard group={group} onClick={() => onCardClick(group)} />
             </motion.div>
           ))}
         </motion.div>
@@ -771,9 +803,9 @@ const pageVariants = {
 
 export default function FanFunds() {
   const [currentPage, setCurrentPage] = useState<Page>("directory");
-  const [records, setRecords] = useState<AthleteRecord[]>([]);
+  const [groups, setGroups] = useState<AthleteGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCard, setSelectedCard] = useState<AthleteRecord | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<AthleteGroup | null>(null);
   const [claimPrefill, setClaimPrefill] = useState("");
 
   // fetch data, fall back to static records if API unavailable
@@ -785,25 +817,22 @@ export default function FanFunds() {
       })
       .then((text) => {
         const result = Papa.parse<AthleteRecord>(text, { header: true, skipEmptyLines: true });
-        if (result.data.length > 0) {
-          setRecords(result.data);
-        } else {
-          setRecords(STATIC_RECORDS);
-        }
+        const records = result.data.length > 0 ? result.data : STATIC_RECORDS;
+        setGroups(groupRecords(records));
       })
-      .catch(() => setRecords(STATIC_RECORDS))
+      .catch(() => setGroups(groupRecords(STATIC_RECORDS)))
       .finally(() => setLoading(false));
   }, []);
 
   function navigate(page: Page) {
     setCurrentPage(page);
-    setSelectedCard(null);
+    setSelectedGroup(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleClaim(name: string) {
     setClaimPrefill(name);
-    setSelectedCard(null);
+    setSelectedGroup(null);
     navigate("claim");
   }
 
@@ -832,9 +861,9 @@ export default function FanFunds() {
               </div>
 
               <DirectoryPage
-                records={records}
+                groups={groups}
                 loading={loading}
-                onCardClick={setSelectedCard}
+                onCardClick={setSelectedGroup}
                 onNavigateClaim={handleClaim}
               />
             </motion.div>
@@ -858,10 +887,10 @@ export default function FanFunds() {
 
       {/* Modal */}
       <AnimatePresence>
-        {selectedCard && (
+        {selectedGroup && (
           <Modal
-            record={selectedCard}
-            onClose={() => setSelectedCard(null)}
+            group={selectedGroup}
+            onClose={() => setSelectedGroup(null)}
             onClaim={handleClaim}
           />
         )}
