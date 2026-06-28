@@ -10,14 +10,20 @@ import { CheckCircle2, X, Heart, FileText, UserCheck, Search, ChevronDown } from
 type AthleteRecord = {
   id: string;
   icon_name: string;
+  icon_source: string;
   icon_subcategory: string;
   philanthropy_name: string;
-  mission_statement: string;
   annual_revenue: string;
+  mission_statement: string;
   propublica_url: string;
   philanthropy_description: string;
-  claimed: string;
   donation_url: string;
+  claimed: string;
+  entity_type: string;
+  total_expenses: string;
+  grant_expense_ratio: string;
+  net_assets: string;
+  image_url: string;
 };
 
 type Page = "directory" | "about" | "claim";
