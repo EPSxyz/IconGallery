@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, X, Heart, FileText, UserCheck, Search, ChevronDown } from "lucide-react";
+import STATIC_RECORDS_RAW from "@/data/athletes.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ type AthleteRecord = {
   image_url: string;
 };
 
-type Page = "directory" | "about" | "claim";
+type Page = "directory" | "about" | "claim" | "contact";
 
 type AthleteGroup = {
   icon_name: string;
@@ -37,28 +38,7 @@ type AthleteGroup = {
 
 const DATA_URL = "/api/athletes";
 
-const STATIC_RECORDS: AthleteRecord[] = [
-  { id: "990_001", icon_name: "LeBron James", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "LeBron James Family Foundation", annual_revenue: "10214580", mission_statement: "Creating generational change for kids and families in Akron through education and co-curricular educational initiatives.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/20716277", philanthropy_description: "The LeBron James Family Foundation operates with a highly focused geographic mandate, dedicating its resources to creating systemic, generational change in Akron, Ohio. Instead of broad, disparate grantmaking, the organization functions almost as a social enterprise, directly operating robust educational and community support systems like the I PROMISE School, which serves the city's most at-risk students. Quantitatively, the organization's impact is significant, providing wrap-around services to over 1,600 students and their families, including guaranteed college tuition, transitional housing at the I PROMISE Village, and long-term vocational support.", donation_url: "https://www.charitynavigator.org/ein/020716277", claimed: "Yes", entity_type: "Public Charity", total_expenses: "8114352", grant_expense_ratio: "0.654", net_assets: "6211842", image_url: "" },
-  { id: "990_002", icon_name: "Stephen Curry", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "Eat. Learn. Play. Foundation", annual_revenue: "21438905", mission_statement: "Fighting to end childhood hunger, ensuring access to quality education, and providing safe places to play.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/831373602", philanthropy_description: "Eat. Learn. Play. Foundation focuses on three vital pillars for healthy childhood development: nutrition, education, and physical activity, primarily serving the Oakland and broader Bay Area communities. The organization leverages significant community partnerships to scale its impact, operating as a sophisticated public charity that drives both direct programming and strategic grantmaking. Since its inception, the foundation has delivered over 25 million meals to food-insecure families, distributed hundreds of thousands of books to combat early childhood illiteracy, and funded the revitalization of numerous community playgrounds.", donation_url: "https://www.eatlearnplay.org/give", claimed: "No", entity_type: "Public Charity", total_expenses: "17112450", grant_expense_ratio: "0.812", net_assets: "4326455", image_url: "" },
-  { id: "990_003", icon_name: "Tiger Woods", icon_source: "Athlete", icon_subcategory: "Golf", philanthropy_name: "TGR Foundation", annual_revenue: "14895330", mission_statement: "Empowering students to pursue their passions through education and STEM-based learning.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/200677815", philanthropy_description: "The TGR Foundation has evolved over decades from a youth golf initiative into a highly structured educational organization focused on STEM education and college access. The foundation operates physical learning labs that provide interactive, inquiry-based educational experiences for underrepresented students, equipping them with modern technical skills. With a robust operating budget, the foundation has reached over 2 million students globally through its digital platforms and physical campuses. Its flagship Earl Woods Scholar Program boasts an exceptional graduation rate of nearly 100%.", donation_url: "https://donate.tgrfoundation.org/give/231401/#!/donation/checkout", claimed: "Yes", entity_type: "Public Charity", total_expenses: "13211400", grant_expense_ratio: "0.725", net_assets: "28455190", image_url: "" },
-  { id: "990_004", icon_name: "Magic Johnson", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "Magic Johnson Foundation", annual_revenue: "2114600", mission_statement: "Supporting educational, health, and social needs of ethnically diverse, urban communities.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/883208058", philanthropy_description: "The Magic Johnson Foundation is one of the longest-standing athlete-driven philanthropic organizations, originally established to combat the HIV/AIDS epidemic through education and prevention. Over time, the organization has strategically expanded its exempt purpose to address a broader range of educational, health, and social needs within ethnically diverse, urban communities across the United States.", donation_url: "http://magicjohnson.org/", claimed: "No", entity_type: "Public Charity", total_expenses: "1985320", grant_expense_ratio: "0.618", net_assets: "1145200", image_url: "" },
-  { id: "990_005", icon_name: "Derek Jeter", icon_source: "Athlete", icon_subcategory: "Baseball", philanthropy_name: "Turn 2 Foundation", annual_revenue: "2455120", mission_statement: "Creating programs that motivate young people to turn away from drugs and alcohol.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/341847687", philanthropy_description: "The Turn 2 Foundation was established with a clear mandate to guide youth away from drugs and alcohol by fostering healthy lifestyles, academic excellence, and leadership skills. The organization operates comprehensive, long-term programs that engage students from middle school through high school. Its signature Jeter's Leaders program has successfully cultivated thousands of high-achieving student ambassadors who drive positive social change in their own communities.", donation_url: "https://www.mlb.com/turn-2-foundation/donate", claimed: "Yes", entity_type: "Public Charity", total_expenses: "2210840", grant_expense_ratio: "0.781", net_assets: "5122940", image_url: "" },
-  { id: "990_006", icon_name: "Novak Djokovic", icon_source: "Athlete", icon_subcategory: "Tennis", philanthropy_name: "Novak Djokovic Foundation", annual_revenue: "3120440", mission_statement: "Ensuring all children have access to high-quality preschool education.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/454219615", philanthropy_description: "The Novak Djokovic Foundation is deeply committed to early childhood education, operating with a specific focus on rebuilding and equipping preschools in underserved areas of Serbia. The foundation's quantitative achievements include the reconstruction of over 50 educational facilities, the specialized training of thousands of teachers, and direct support to more than 50,000 children.", donation_url: "https://fundraise.novakdjokovicfoundation.org/give/f5070829/", claimed: "No", entity_type: "Public Charity", total_expenses: "2895110", grant_expense_ratio: "0.843", net_assets: "1845300", image_url: "" },
-  { id: "990_007", icon_name: "Kevin Durant", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "Kevin Durant Charity Foundation", annual_revenue: "2045900", mission_statement: "Enriching the lives of at-risk youth from low-income backgrounds through educational, athletic, and social programs.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/462353335", philanthropy_description: "The Kevin Durant Charity Foundation operates with a focus on enriching the lives of at-risk youth from low-income backgrounds, utilizing both educational and athletic programming. A central pillar of its philanthropic strategy is the 'Build It and They Will Ball' initiative, which revitalizes community basketball courts in underserved neighborhoods across the globe.", donation_url: "https://www.charitynavigator.org/ein/462353335", claimed: "Yes", entity_type: "Private Foundation", total_expenses: "1890440", grant_expense_ratio: "0.706", net_assets: "2311500", image_url: "" },
-  { id: "990_008", icon_name: "Patrick Mahomes", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "15 and the Mahomies Foundation", annual_revenue: "1544200", mission_statement: "Improving the lives of children through initiatives focused on health, wellness, and resource-deprived communities.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/834134118", philanthropy_description: "The 15 and the Mahomies Foundation focuses on improving the lives of children through strategic initiatives surrounding health, wellness, and educational resources. The organization effectively partners with existing community nonprofits and hospitals, utilizing a grantmaking model to amplify the reach of proven programs that serve resource-deprived communities in the Kansas City area and beyond.", donation_url: "https://www.15andthemahomies.org/donate/", claimed: "No", entity_type: "Public Charity", total_expenses: "1211500", grant_expense_ratio: "0.752", net_assets: "845600", image_url: "" },
-  { id: "990_009", icon_name: "Peyton Manning", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "Peyback Foundation", annual_revenue: "662548", mission_statement: "Promoting the future success of disadvantaged youth by assisting programs that provide leadership growth and opportunities.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/341882628", philanthropy_description: "The Peyback Foundation is dedicated to promoting the future success of disadvantaged youth by providing substantial financial assistance to youth-focused organizations across multiple states. Instead of operating its own distinct programs, the foundation functions primarily as a sophisticated grantmaking entity, rigorously identifying and funding highly effective local charities.", donation_url: "https://www.peytonmanning.com/donate", claimed: "Yes", entity_type: "Public Charity", total_expenses: "527641", grant_expense_ratio: "0.738", net_assets: "4925347", image_url: "" },
-  { id: "990_010", icon_name: "Travis Kelce", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "Eighty-Seven & Running", annual_revenue: "1120450", mission_statement: "Empowering disadvantaged youth to achieve success by providing resources in education, business, athletics, STEM, and the arts.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/474569777", philanthropy_description: "Eighty-Seven & Running aims to empower disadvantaged youth to achieve success by providing targeted resources and cultivating talent in multiple disciplines. The foundation actively partners with community pillars like the Boys & Girls Clubs to create safe, enriching environments for children who might otherwise lack access to comprehensive after-school support.", donation_url: "https://87running.org/", claimed: "No", entity_type: "Public Charity", total_expenses: "945300", grant_expense_ratio: "0.684", net_assets: "540110", image_url: "" },
-  { id: "990_011", icon_name: "J.J. Watt", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "Justin J. Watt Foundation", annual_revenue: "1340600", mission_statement: "Providing after-school opportunities for middle-school-aged children to become involved in athletics.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/273516574", philanthropy_description: "The Justin J. Watt Foundation operates with a highly specific mandate: providing funding for after-school athletic programs for middle-school-aged children in communities that face significant financial barriers. The foundation has distributed millions of dollars in highly targeted grants across the country, primarily to supply essential athletic equipment and uniforms.", donation_url: "https://jjwfoundation.org/donate/", claimed: "Yes", entity_type: "Public Charity", total_expenses: "1185200", grant_expense_ratio: "0.827", net_assets: "1455300", image_url: "" },
-  { id: "990_012", icon_name: "Drew Brees", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "Brees Dream Foundation", annual_revenue: "2215800", mission_statement: "Improving the quality of life for cancer patients and providing care, education, and opportunities for children and families in need.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/562380198", philanthropy_description: "The Brees Dream Foundation was initially founded with a mission to improve the quality of life for cancer patients and provide vital care, education, and opportunities for children and families in need. The organization has since expanded its philanthropic scope significantly, particularly in the wake of natural disasters, actively driving major community revitalization and relief efforts across the Gulf Coast and beyond.", donation_url: "https://drewbrees.com/", claimed: "No", entity_type: "Public Charity", total_expenses: "2045100", grant_expense_ratio: "0.794", net_assets: "3845200", image_url: "" },
-  { id: "990_013", icon_name: "Russell Wilson", icon_source: "Athlete", icon_subcategory: "Football", philanthropy_name: "Why Not You Foundation", annual_revenue: "1055400", mission_statement: "Eliminating barriers to opportunity in youth education and health.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/464784365", philanthropy_description: "The Why Not You Foundation focuses on empowering youth to lead with a 'why not you' attitude by breaking down systemic barriers to opportunity, particularly in the realms of education, children's health, and food security. Through major fundraising initiatives and direct programming, the foundation has channeled substantial resources into critical areas such as pediatric cancer research and expanding educational access for marginalized students.", donation_url: "https://whynotyoufdn.org/donate", claimed: "Yes", entity_type: "Public Charity", total_expenses: "912400", grant_expense_ratio: "0.621", net_assets: "412800", image_url: "" },
-  { id: "990_014", icon_name: "Michael Phelps", icon_source: "Athlete", icon_subcategory: "Swimming", philanthropy_name: "Michael Phelps Foundation", annual_revenue: "1012500", mission_statement: "Promoting water safety, healthy living, and the pursuit of dreams, especially for children.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/611571538", philanthropy_description: "The Michael Phelps Foundation focuses on promoting water safety, healthy living, and the pursuit of dreams, utilizing the sport of swimming as a catalyst for holistic youth development. By partnering with organizations like the Boys & Girls Clubs of America and Special Olympics, the foundation has successfully scaled its curriculum globally, reaching tens of thousands of children.", donation_url: "https://michaelphelpsfoundation.org/donate/", claimed: "No", entity_type: "Public Charity", total_expenses: "895400", grant_expense_ratio: "0.713", net_assets: "745200", image_url: "" },
-  { id: "990_015", icon_name: "Tony Hawk", icon_source: "Athlete", icon_subcategory: "Skateboarding", philanthropy_name: "The Skatepark Project", annual_revenue: "3415900", mission_statement: "Helping underserved communities create safe and inclusive public skateparks for youth.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/330965889", philanthropy_description: "The Skatepark Project is dedicated to helping underserved communities create safe, inclusive, and legal public skateparks for youth. With millions of dollars awarded in grants, the organization has facilitated the construction of hundreds of skateparks across the United States. This highly specialized philanthropic model not only provides youth with a safe space for physical activity and creative expression but also empowers local advocates to engage effectively with their local governments.", donation_url: "https://careasy.org/the-skatepark-project", claimed: "Yes", entity_type: "Public Charity", total_expenses: "3110400", grant_expense_ratio: "0.668", net_assets: "2145900", image_url: "" },
-  { id: "990_016", icon_name: "Shaquille O'Neal", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "The Shaquille O'Neal Foundation", annual_revenue: "2110400", mission_statement: "Creating pathways for underserved youth by providing resources and opportunities to help them reach their full potential.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/842488384", philanthropy_description: "The Shaquille O'Neal Foundation focuses on creating pathways for underserved youth, helping them achieve their full potential by providing critical resources and opportunities. The organization operates primarily through deep, strategic partnerships with established national nonprofits, most notably the Boys & Girls Clubs of America and Communities in Schools.", donation_url: "https://www.shaqfoundation.org/donate", claimed: "No", entity_type: "Public Charity", total_expenses: "1845300", grant_expense_ratio: "0.745", net_assets: "1320400", image_url: "" },
-  { id: "990_017", icon_name: "Clayton Kershaw", icon_source: "Athlete", icon_subcategory: "Baseball", philanthropy_name: "Kershaw's Challenge", annual_revenue: "2045110", mission_statement: "Empowering people to positively impact communities globally and locally through community-focused projects.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/455554866", philanthropy_description: "Kershaw's Challenge is a purpose-driven organization that seeks to empower people to use their spheres of influence to positively impact communities both locally and globally. The organization partners with specific beneficiaries each year, focusing on vulnerable children and communities in Los Angeles, Dallas, Zambia, and the Dominican Republic.", donation_url: "https://www.kershawschallenge.com/donate", claimed: "Yes", entity_type: "Public Charity", total_expenses: "1811300", grant_expense_ratio: "0.801", net_assets: "1114200", image_url: "" },
-  { id: "990_018", icon_name: "Albert Pujols", icon_source: "Athlete", icon_subcategory: "Baseball", philanthropy_name: "Pujols Family Foundation", annual_revenue: "1145200", mission_statement: "Promoting awareness, providing hope, and meeting tangible needs for individuals and families living with Down syndrome.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/202272546", philanthropy_description: "The Pujols Family Foundation operates with a dual focus: promoting awareness and meeting tangible needs for individuals living with Down syndrome, and providing extensive humanitarian relief for impoverished populations in the Dominican Republic. Internationally, it conducts comprehensive medical missions, builds essential infrastructure, and provides critical poverty relief.", donation_url: "https://www.pujolsfamilyfoundation.org/donate/other-ways-to-give/", claimed: "No", entity_type: "Public Charity", total_expenses: "1044900", grant_expense_ratio: "0.764", net_assets: "645100", image_url: "" },
-  { id: "990_019", icon_name: "Chris Paul", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "Chris Paul Family Foundation", annual_revenue: "1022400", mission_statement: "Positively impacting individuals and families by leveling the playing field in education, sports, and life.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/472373649", philanthropy_description: "The Chris Paul Family Foundation strives to positively impact individuals and families by leveling the playing field in education, sports, and life. Through strategic partnerships and direct grantmaking, the foundation has established numerous technology labs in public schools and community centers. Its extensive support for HBCUs and targeted scholarship programs highlight a deep commitment to fostering long-term educational equity.", donation_url: "https://www.chrispaulfamilyfoundation.org/", claimed: "Yes", entity_type: "Private Foundation", total_expenses: "914200", grant_expense_ratio: "0.695", net_assets: "512300", image_url: "" },
-  { id: "990_020", icon_name: "Dikembe Mutombo", icon_source: "Athlete", icon_subcategory: "Basketball", philanthropy_name: "Dikembe Mutombo Foundation", annual_revenue: "1455300", mission_statement: "Improving the health, education, and quality of life for the people in the Democratic Republic of the Congo.", propublica_url: "https://projects.propublica.org/nonprofits/organizations/582359589", philanthropy_description: "The Dikembe Mutombo Foundation is a premier example of international, single-issue athlete philanthropy, dedicated to improving the health, education, and quality of life for the people in the Democratic Republic of the Congo. The organization's crowning achievement is the Biamba Marie Mutombo Hospital, a state-of-the-art medical facility built in Kinshasa that provides critical, life-saving medical care.", donation_url: "https://dmf.org/", claimed: "No", entity_type: "Public Charity", total_expenses: "1320110", grant_expense_ratio: "0.856", net_assets: "2411800", image_url: "" },
-];
+const STATIC_RECORDS = STATIC_RECORDS_RAW as AthleteRecord[];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -686,22 +666,10 @@ function ClaimPage({ prefill, onSuccess }: { prefill: string; onSuccess: () => v
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Navbar({
-  currentPage,
-  onNavigate,
-}: {
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
-}) {
-  const links: { label: string; page: Page }[] = [
-    { label: "Directory", page: "directory" },
-    { label: "About Us", page: "about" },
-    { label: "Claim a Profile", page: "claim" },
-  ];
-
+function Navbar({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (
     <header className="sticky top-0 z-40 bg-[#fdfbf7] border-b border-[#d4c9b0]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
         <button
           onClick={() => onNavigate("directory")}
           className="text-2xl font-bold text-[#2c2c2c] tracking-tight"
@@ -709,30 +677,77 @@ function Navbar({
         >
           Fan Funds
         </button>
-
-        <nav className="flex items-center gap-6 sm:gap-8">
-          {links.map(({ label, page }) => (
-            <button
-              key={page}
-              onClick={() => onNavigate(page)}
-              className={`text-[11px] tracking-widest uppercase font-sans transition-colors relative pb-0.5 ${
-                currentPage === page
-                  ? "text-[#2c2c2c]"
-                  : "text-[#7a7060] hover:text-[#2c2c2c]"
-              }`}
-            >
-              {label}
-              {currentPage === page && (
-                <motion.div
-                  layoutId="nav-underline"
-                  className="absolute -bottom-[1px] left-0 right-0 h-[1px] bg-[#2c2c2c]"
-                />
-              )}
-            </button>
-          ))}
-        </nav>
       </div>
     </header>
+  );
+}
+
+// ─── Contact Form ─────────────────────────────────────────────────────────────
+
+function ContactForm() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = "Required";
+    if (!form.email.trim()) errs.email = "Required";
+    if (!form.message.trim()) errs.message = "Required";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    console.log("Contact:", form);
+    setSubmitted(true);
+  }
+
+  function field(key: keyof typeof form, placeholder: string, type = "text") {
+    return (
+      <div>
+        <input
+          type={type}
+          placeholder={placeholder}
+          value={form[key]}
+          onChange={(e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setErrors((er) => ({ ...er, [key]: "" })); }}
+          className={`w-full bg-white border rounded-sm px-2.5 py-1.5 text-xs text-[#2c2c2c] font-sans placeholder-[#bdb3a0] focus:outline-none transition-colors ${
+            errors[key] ? "border-[#c0392b]" : "border-[#d4c9b0] focus:border-[#2c2c2c]"
+          }`}
+        />
+        {errors[key] && <p className="mt-0.5 text-[9px] text-[#c0392b] font-sans">{errors[key]}</p>}
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <p className="text-[11px] text-[#4a7c59] font-sans">
+        Thanks! We&apos;ll be in touch.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
+      {field("name", "Name")}
+      {field("email", "Email", "email")}
+      <div>
+        <textarea
+          placeholder="Message"
+          value={form.message}
+          onChange={(e) => { setForm((f) => ({ ...f, message: e.target.value })); setErrors((er) => ({ ...er, message: "" })); }}
+          rows={3}
+          className={`w-full bg-white border rounded-sm px-2.5 py-1.5 text-xs text-[#2c2c2c] font-sans placeholder-[#bdb3a0] focus:outline-none transition-colors resize-none ${
+            errors.message ? "border-[#c0392b]" : "border-[#d4c9b0] focus:border-[#2c2c2c]"
+          }`}
+        />
+        {errors.message && <p className="mt-0.5 text-[9px] text-[#c0392b] font-sans">{errors.message}</p>}
+      </div>
+      <button
+        type="submit"
+        className="w-full bg-[#2c2c2c] hover:bg-[#4a7c59] text-[#fdfbf7] text-[10px] tracking-widest uppercase font-sans py-2 rounded-sm transition-colors duration-300"
+      >
+        Send
+      </button>
+    </form>
   );
 }
 
@@ -742,7 +757,8 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (
     <footer className="border-t border-[#d4c9b0] bg-[#fdfbf7] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Brand */}
           <div>
             <p
               className="text-lg font-bold text-[#2c2c2c] mb-2"
@@ -750,32 +766,44 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
             >
               Fan Funds
             </p>
-            <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed max-w-xs">
+            <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed">
               A curated directory of verified athlete and celebrity philanthropies. Making
               impact visible, one profile at a time.
             </p>
           </div>
 
+          {/* Quick Links */}
           <div>
             <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Quick Links</p>
             <div className="space-y-2">
-              {(["directory", "about", "claim"] as Page[]).map((p) => (
+              {([
+                { label: "Directory", page: "directory" },
+                { label: "About Us", page: "about" },
+                { label: "Claim a Profile", page: "claim" },
+              ] as { label: string; page: Page }[]).map(({ label, page }) => (
                 <button
-                  key={p}
-                  onClick={() => onNavigate(p)}
-                  className="block text-[11px] text-[#7a7060] hover:text-[#2c2c2c] font-sans capitalize transition-colors"
+                  key={page}
+                  onClick={() => onNavigate(page)}
+                  className="block text-[11px] text-[#7a7060] hover:text-[#2c2c2c] font-sans transition-colors"
                 >
-                  {p === "claim" ? "Claim a Profile" : p === "about" ? "About Us" : "Directory"}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Data Sources */}
           <div>
             <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Data Sources</p>
             <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed">
               IRS public filings · ProPublica Nonprofit Explorer · Direct representative outreach
             </p>
+          </div>
+
+          {/* Contact Us */}
+          <div>
+            <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Contact Us</p>
+            <ContactForm />
           </div>
         </div>
 
@@ -838,7 +866,7 @@ export default function FanFunds() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fdfbf7]">
-      <Navbar currentPage={currentPage} onNavigate={navigate} />
+      <Navbar onNavigate={navigate} />
 
       <main className="flex-1">
         <AnimatePresence mode="wait">
@@ -847,16 +875,16 @@ export default function FanFunds() {
               {/* hero */}
               <div className="border-b border-[#d4c9b0] py-12 text-center px-4">
                 <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">
-                  The Athlete Philanthropy Directory
+                  The Charities Your Icons Champion
                 </p>
                 <h1
                   className="text-4xl sm:text-5xl font-bold text-[#2c2c2c] max-w-2xl mx-auto leading-tight"
                   style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
                 >
-                  Where champions give back.
+                  Where Fans Give Back.
                 </h1>
                 <p className="mt-4 text-sm text-[#7a7060] font-sans max-w-md mx-auto leading-relaxed">
-                  Discover and support the foundations behind the names you know.
+                  Discover and support the charities and causes championed by the names you know.
                 </p>
               </div>
 
