@@ -27,7 +27,7 @@ type AthleteRecord = {
   image_url: string;
 };
 
-type Page = "directory" | "about" | "claim";
+type Page = "directory" | "about" | "claim" | "contact";
 
 type AthleteGroup = {
   icon_name: string;
@@ -673,11 +673,11 @@ function Navbar({
   currentPage: Page;
   onNavigate: (page: Page) => void;
 }) {
-  const links: { label: string; page: Page }[] = [
-    { label: "Directory", page: "directory" },
-    { label: "About Us", page: "about" },
-    { label: "Claim a Profile", page: "claim" },
-  ];
+  const pageLabel: Partial<Record<Page, string>> = {
+    about: "About Us",
+    claim: "Claim a Profile",
+    contact: "Contact Us",
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-[#fdfbf7] border-b border-[#d4c9b0]">
@@ -690,29 +690,82 @@ function Navbar({
           Fan Funds
         </button>
 
-        <nav className="flex items-center gap-6 sm:gap-8">
-          {links.map(({ label, page }) => (
-            <button
-              key={page}
-              onClick={() => onNavigate(page)}
-              className={`text-[11px] tracking-widest uppercase font-sans transition-colors relative pb-0.5 ${
-                currentPage === page
-                  ? "text-[#2c2c2c]"
-                  : "text-[#7a7060] hover:text-[#2c2c2c]"
-              }`}
-            >
-              {label}
-              {currentPage === page && (
-                <motion.div
-                  layoutId="nav-underline"
-                  className="absolute -bottom-[1px] left-0 right-0 h-[1px] bg-[#2c2c2c]"
-                />
-              )}
-            </button>
-          ))}
-        </nav>
+        {currentPage !== "directory" && (
+          <span className="text-[11px] tracking-widest uppercase font-sans text-[#7a7060]">
+            {pageLabel[currentPage]}
+          </span>
+        )}
       </div>
     </header>
+  );
+}
+
+// ─── Contact Form ─────────────────────────────────────────────────────────────
+
+function ContactForm() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = "Required";
+    if (!form.email.trim()) errs.email = "Required";
+    if (!form.message.trim()) errs.message = "Required";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    console.log("Contact:", form);
+    setSubmitted(true);
+  }
+
+  function field(key: keyof typeof form, placeholder: string, type = "text") {
+    return (
+      <div>
+        <input
+          type={type}
+          placeholder={placeholder}
+          value={form[key]}
+          onChange={(e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setErrors((er) => ({ ...er, [key]: "" })); }}
+          className={`w-full bg-white border rounded-sm px-2.5 py-1.5 text-xs text-[#2c2c2c] font-sans placeholder-[#bdb3a0] focus:outline-none transition-colors ${
+            errors[key] ? "border-[#c0392b]" : "border-[#d4c9b0] focus:border-[#2c2c2c]"
+          }`}
+        />
+        {errors[key] && <p className="mt-0.5 text-[9px] text-[#c0392b] font-sans">{errors[key]}</p>}
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <p className="text-[11px] text-[#4a7c59] font-sans">
+        Thanks! We&apos;ll be in touch.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
+      {field("name", "Name")}
+      {field("email", "Email", "email")}
+      <div>
+        <textarea
+          placeholder="Message"
+          value={form.message}
+          onChange={(e) => { setForm((f) => ({ ...f, message: e.target.value })); setErrors((er) => ({ ...er, message: "" })); }}
+          rows={3}
+          className={`w-full bg-white border rounded-sm px-2.5 py-1.5 text-xs text-[#2c2c2c] font-sans placeholder-[#bdb3a0] focus:outline-none transition-colors resize-none ${
+            errors.message ? "border-[#c0392b]" : "border-[#d4c9b0] focus:border-[#2c2c2c]"
+          }`}
+        />
+        {errors.message && <p className="mt-0.5 text-[9px] text-[#c0392b] font-sans">{errors.message}</p>}
+      </div>
+      <button
+        type="submit"
+        className="w-full bg-[#2c2c2c] hover:bg-[#4a7c59] text-[#fdfbf7] text-[10px] tracking-widest uppercase font-sans py-2 rounded-sm transition-colors duration-300"
+      >
+        Send
+      </button>
+    </form>
   );
 }
 
@@ -722,7 +775,8 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (
     <footer className="border-t border-[#d4c9b0] bg-[#fdfbf7] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Brand */}
           <div>
             <p
               className="text-lg font-bold text-[#2c2c2c] mb-2"
@@ -730,32 +784,44 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
             >
               Fan Funds
             </p>
-            <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed max-w-xs">
+            <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed">
               A curated directory of verified athlete and celebrity philanthropies. Making
               impact visible, one profile at a time.
             </p>
           </div>
 
+          {/* Quick Links */}
           <div>
             <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Quick Links</p>
             <div className="space-y-2">
-              {(["directory", "about", "claim"] as Page[]).map((p) => (
+              {([
+                { label: "Directory", page: "directory" },
+                { label: "About Us", page: "about" },
+                { label: "Claim a Profile", page: "claim" },
+              ] as { label: string; page: Page }[]).map(({ label, page }) => (
                 <button
-                  key={p}
-                  onClick={() => onNavigate(p)}
-                  className="block text-[11px] text-[#7a7060] hover:text-[#2c2c2c] font-sans capitalize transition-colors"
+                  key={page}
+                  onClick={() => onNavigate(page)}
+                  className="block text-[11px] text-[#7a7060] hover:text-[#2c2c2c] font-sans transition-colors"
                 >
-                  {p === "claim" ? "Claim a Profile" : p === "about" ? "About Us" : "Directory"}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Data Sources */}
           <div>
             <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Data Sources</p>
             <p className="text-[11px] text-[#7a7060] font-sans leading-relaxed">
               IRS public filings · ProPublica Nonprofit Explorer · Direct representative outreach
             </p>
+          </div>
+
+          {/* Contact Us */}
+          <div>
+            <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">Contact Us</p>
+            <ContactForm />
           </div>
         </div>
 
