@@ -875,16 +875,16 @@ export default function FanFunds() {
               {/* hero */}
               <div className="border-b border-[#d4c9b0] py-12 text-center px-4">
                 <p className="text-[10px] tracking-widest uppercase text-[#7a7060] font-sans mb-3">
-                  The Athlete Philanthropy Directory
+                  The Charities Your Icons Champion
                 </p>
                 <h1
                   className="text-4xl sm:text-5xl font-bold text-[#2c2c2c] max-w-2xl mx-auto leading-tight"
                   style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
                 >
-                  Where champions give back.
+                  Where Fans Give Back.
                 </h1>
                 <p className="mt-4 text-sm text-[#7a7060] font-sans max-w-md mx-auto leading-relaxed">
-                  Discover and support the foundations behind the names you know.
+                  Discover and support the charities and causes championed by the names you know.
                 </p>
               </div>
 
