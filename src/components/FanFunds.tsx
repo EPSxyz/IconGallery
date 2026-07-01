@@ -666,22 +666,10 @@ function ClaimPage({ prefill, onSuccess }: { prefill: string; onSuccess: () => v
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Navbar({
-  currentPage,
-  onNavigate,
-}: {
-  currentPage: Page;
-  onNavigate: (page: Page) => void;
-}) {
-  const pageLabel: Partial<Record<Page, string>> = {
-    about: "About Us",
-    claim: "Claim a Profile",
-    contact: "Contact Us",
-  };
-
+function Navbar({ onNavigate }: { onNavigate: (page: Page) => void }) {
   return (
     <header className="sticky top-0 z-40 bg-[#fdfbf7] border-b border-[#d4c9b0]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
         <button
           onClick={() => onNavigate("directory")}
           className="text-2xl font-bold text-[#2c2c2c] tracking-tight"
@@ -689,12 +677,6 @@ function Navbar({
         >
           Fan Funds
         </button>
-
-        {currentPage !== "directory" && (
-          <span className="text-[11px] tracking-widest uppercase font-sans text-[#7a7060]">
-            {pageLabel[currentPage]}
-          </span>
-        )}
       </div>
     </header>
   );
@@ -884,7 +866,7 @@ export default function FanFunds() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fdfbf7]">
-      <Navbar currentPage={currentPage} onNavigate={navigate} />
+      <Navbar onNavigate={navigate} />
 
       <main className="flex-1">
         <AnimatePresence mode="wait">
